@@ -28,6 +28,16 @@
             overflow-x: auto;
             width: 100%;
         }
+        #noticeArea {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+        }
+        #noticeText {
+            width: 100%;
+            height: 100px;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.5.0/firebase-app-compat.js"></script>
@@ -175,10 +185,30 @@
             XLSX.utils.book_append_sheet(wb, ws, "出欠表");
             XLSX.writeFile(wb, "出欠表.xlsx");
         }
+
+        // お知らせ欄
+        function loadNotice() {
+            db.ref("notice").on("value", snapshot => {
+                const data = snapshot.val();
+                document.getElementById("noticeText").value = data || "";
+            });
+        }
+
+        function saveNotice() {
+            const text = document.getElementById("noticeText").value;
+            db.ref("notice").set(text);
+        }
     </script>
 </head>
 <body>
     <h2>出欠表</h2>
+
+    <div id="noticeArea">
+        <h3>お知らせ欄</h3>
+        <textarea id="noticeText" placeholder="ここにお知らせを入力"></textarea><br>
+        <button onclick="saveNotice()">保存</button>
+    </div>
+
     <label for="filterName">名前でフィルター：</label>
     <select id="filterName" onchange="filterNames()">
         <option value="">全員表示</option>
@@ -189,8 +219,7 @@
             <thead>
                 <tr id="headerRow"></tr>
             </thead>
-            <tbody>
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
@@ -205,6 +234,7 @@
 
     <script>
         renderTable();
+        loadNotice();
     </script>
 </body>
 </html>
