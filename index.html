@@ -5,19 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>出欠表</title>
     <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            font-family: sans-serif;
+        }
         table {
             border-collapse: collapse;
             width: 100%;
-            table-layout: fixed;
+            min-width: 800px;
         }
         th, td {
             border: 1px solid #000;
             padding: 8px;
             text-align: center;
-            min-width: 120px;
+            white-space: nowrap;
         }
         .controls {
             margin: 20px 0;
+        }
+        .table-container {
+            overflow-x: auto;
+            width: 100%;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -29,7 +38,7 @@
         <option value="">全員表示</option>
     </select>
 
-    <div style="overflow: auto; max-height: 500px;">
+    <div class="table-container">
         <table id="attendanceTable">
             <thead>
                 <tr id="headerRow">
