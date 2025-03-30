@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出欠表</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h2>出欠表</h2>
+    <label for="filterName">名前でフィルター：</label>
+    <select id="filterName" onchange="filterNames()">
+        <option value="">全員表示</option>
+    </select>
+
+    <div style="overflow: auto; max-height: 500px;">
+        <table id="attendanceTable">
+            <thead>
+                <tr id="headerRow">
+                    <th>名前</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="newName" placeholder="名前を入力">
+        <button onclick="addName()">名前を追加</button>
+        <input type="text" id="newEvent" placeholder="イベントを入力">
+        <button onclick="addEvent()">イベントを追加</button>
+    </div>
+
+    <button onclick="downloadExcel()">Excelダウンロード</button>
+
+    <script>
+        let names = [
+            "小島 美紀(Ｓ３)", "笹山 久美子(Ｓ３)", "栗山 亞矢子(Ｓ３)", "鷲見 亜希子(Ｓ３)", "Ｊ村 紋子(Ｓ３)", "西川 美佳(Ｓ３)", "眞浦 知恵子(Ｓ３)", "稲葉 弘子(Ｓ３)", "伊藤 恵美(Ｓ３)", "佐藤 晃子(Ｓ３)",
+            "高橋 保子(Ｓ２)", "本間 敏代(Ｓ２)", "新信 万里子(Ｓ２)", "竹村 瑞恵(Ｓ２)", "垣見 京子(Ｓ２)", "永 裕香子(Ｓ２)", "長坂 紀代(Ｓ２)", "小見山 さおり(Ｓ２)", "塚原 花子(Ｓ２)", "松本 倫子(Ｓ２)",
+            "高橋 真紀(Ｓ２)", "加藤 明美(Ｓ２)", "加藤 有紀(Ｓ１)", "香川 敦子(Ｓ１)", "大鹿 居依(Ｓ１)", "櫻井 杏子(Ｓ１)", "井戸 真弓(Ｓ１)", "岩瀬 初美(Ｓ１)", "田Ｊ 律子(Ｓ１)", "竹腰 篤(Ｓ１)",
+            "小河 友里菜(Ｊ３)", "砥川 加容子(Ｊ３)", "尾関 奏子(Ｊ３)"
+        ];
+
+        let events = [
+            "3月29日事務局会議", "4月26日新入生父母歓迎会", "5月25日愛知父母懇総会（午前の部 ランチ会）", "5月25日愛知父母懇総会（式典）", "6月8日昭和 初夏のつどい", 
+            "7月5日進路の集い（午前の部）", "7月5日地ファンミーティング①（午後の部）", "7月20日サマーセミ", "8月2日愛知父母懇一泊研修", "8月3日愛知父母懇一泊研修", 
+            "10月18日進路の集い（午前の部）", "10月18日ファンミ②（午後の部）", "11月16日昭和 オータム", "12月6日クリスマス会", "1月17日ものづくり講座", 
+            "2月15日春季一日研修", "2月28日卒業生を送る会"
+        ];
+
+        function renderTable() {
+            const theadRow = document.getElementById("headerRow");
+            theadRow.innerHTML = '<th>名前</th>';
+            events.forEach((event, i) => {
+                theadRow.innerHTML += `<th>${event}<br>〇: <span id="countYes${i}">0</span> ✖: <span id="countNo${i}">0</span></th>`;
+            });
+
+            const tbody = document.querySelector("tbody");
+            tbody.innerHTML = "";
+
+            names.forEach(name => {
+                let row = `<tr><td>${name}</td>`;
+                for (let i = 0; i < events.length; i++) {
+                    row += `<td><select onchange="updateCounts()"><option value=""></option><option value="〇">〇</option><option value="✖">✖</option></select></td>`;
+                }
+                row += '</tr>';
+                tbody.innerHTML += row;
+            });
+
+            updateCounts();
+            updateFilterOptions();
+        }
+
+        function updateCounts() {
+            for (let i = 0; i < events.length; i++) {
+                const selects = document.querySelectorAll(`tbody td:nth-child(${i + 2}) select`);
+                let yes = 0, no = 0;
+                selects.forEach(select => {
+                    if (select.value === "〇") yes++;
+                    if (select.value === "✖") no++;
+                });
+                document.getElementById(`countYes${i}`).textContent = yes;
+                document.getElementById(`countNo${i}`).textContent = no;
+            }
+        }
+
+        function updateFilterOptions() {
+            const filter = document.getElementById("filterName");
+            filter.innerHTML = '<option value="">全員表示</option>';
+            names.forEach(name => {
+                const option = document.createElement("option");
+                option.value = name;
+                option.textContent = name;
+                filter.appendChild(option);
+            });
+        }
+
+        function filterNames() {
+            const selected = document.getElementById("filterName").value;
+            const rows = document.querySelectorAll("tbody tr");
+            rows.forEach(row => {
+                const name = row.cells[0].textContent;
+                row.style.display = (!selected || name === selected) ? "" : "none";
+            });
+        }
+
+        function addName() {
+            const nameInput = document.getElementById("newName").value.trim();
+            if (nameInput && !names.includes(nameInput)) {
+                names.push(nameInput);
+                renderTable();
+                document.getElementById("newName").value = "";
+            }
+        }
+
+        function addEvent() {
+            const eventInput = document.getElementById("newEvent").value.trim();
+            if (eventInput && !events.includes(eventInput)) {
+                events.push(eventInput);
+                renderTable();
+                document.getElementById("newEvent").value = "";
+            }
+        }
+
+        function downloadExcel() {
+            const wsData = [];
+            const header = ["名前", ...events];
+            wsData.push(header);
+
+            const rows = document.querySelectorAll("tbody tr");
+            rows.forEach(row => {
+                const rowData = [row.cells[0].textContent];
+                for (let i = 1; i < row.cells.length; i++) {
+                    const select = row.cells[i].querySelector("select");
+                    rowData.push(select ? select.value : "");
+                }
+                wsData.push(rowData);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, "出欠表");
+            XLSX.writeFile(wb, "出欠表.xlsx");
+        }
+
+        renderTable();
+    </script>
+</body>
+</html>
