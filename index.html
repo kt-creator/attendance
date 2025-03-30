@@ -30,36 +30,21 @@
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head>
-<body>
-    <h2>出欠表</h2>
-    <label for="filterName">名前でフィルター：</label>
-    <select id="filterName" onchange="filterNames()">
-        <option value="">全員表示</option>
-    </select>
-
-    <div class="table-container">
-        <table id="attendanceTable">
-            <thead>
-                <tr id="headerRow">
-                    <th>名前</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="controls">
-        <input type="text" id="newName" placeholder="名前を入力">
-        <button onclick="addName()">名前を追加</button>
-        <input type="text" id="newEvent" placeholder="イベントを入力">
-        <button onclick="addEvent()">イベントを追加</button>
-    </div>
-
-    <button onclick="downloadExcel()">Excelダウンロード</button>
-
+    <script src="https://www.gstatic.com/firebasejs/11.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.5.0/firebase-database-compat.js"></script>
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDNazC7mdPwtTFzWLrXldVr0FldCsx44Ow",
+            authDomain: "attendance-62d3c.firebaseapp.com",
+            databaseURL: "https://attendance-62d3c-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "attendance-62d3c",
+            storageBucket: "attendance-62d3c.firebasestorage.app",
+            messagingSenderId: "172372413053",
+            appId: "1:172372413053:web:81cb299d9d1659d474bf14"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let names = [
             "小島 美紀(Ｓ３)", "笹山 久美子(Ｓ３)", "栗山 亞矢子(Ｓ３)", "鷲見 亜希子(Ｓ３)", "Ｊ村 紋子(Ｓ３)", "西川 美佳(Ｓ３)", "眞浦 知恵子(Ｓ３)", "稲葉 弘子(Ｓ３)", "伊藤 恵美(Ｓ３)", "佐藤 晃子(Ｓ３)",
             "高橋 保子(Ｓ２)", "本間 敏代(Ｓ２)", "新信 万里子(Ｓ２)", "竹村 瑞恵(Ｓ２)", "垣見 京子(Ｓ２)", "永 裕香子(Ｓ２)", "長坂 紀代(Ｓ２)", "小見山 さおり(Ｓ２)", "塚原 花子(Ｓ２)", "松本 倫子(Ｓ２)",
@@ -87,7 +72,9 @@
             names.forEach(name => {
                 let row = `<tr><td>${name}</td>`;
                 for (let i = 0; i < events.length; i++) {
-                    row += `<td><select onchange="updateCounts()"><option value=""></option><option value="〇">〇</option><option value="✖">✖</option></select></td>`;
+                    const event = events[i];
+                    const cellId = `${name}_${event}`;
+                    row += `<td><select id="${cellId}" onchange="saveToFirebase('${name}', '${event}', this.value); updateCounts();"><option value=""></option><option value="〇">〇</option><option value="✖">✖</option></select></td>`;
                 }
                 row += '</tr>';
                 tbody.innerHTML += row;
@@ -95,6 +82,26 @@
 
             updateCounts();
             updateFilterOptions();
+            loadFromFirebase();
+        }
+
+        function saveToFirebase(name, event, value) {
+            db.ref(`attendance/${name}/${event}`).set(value);
+        }
+
+        function loadFromFirebase() {
+            db.ref("attendance").on("value", snapshot => {
+                const data = snapshot.val();
+                if (!data) return;
+                for (const name in data) {
+                    for (const event in data[name]) {
+                        const value = data[name][event];
+                        const select = document.getElementById(`${name}_${event}`);
+                        if (select) select.value = value;
+                    }
+                }
+                updateCounts();
+            });
         }
 
         function updateCounts() {
@@ -168,7 +175,35 @@
             XLSX.utils.book_append_sheet(wb, ws, "出欠表");
             XLSX.writeFile(wb, "出欠表.xlsx");
         }
+    </script>
+</head>
+<body>
+    <h2>出欠表</h2>
+    <label for="filterName">名前でフィルター：</label>
+    <select id="filterName" onchange="filterNames()">
+        <option value="">全員表示</option>
+    </select>
 
+    <div class="table-container">
+        <table id="attendanceTable">
+            <thead>
+                <tr id="headerRow"></tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="newName" placeholder="名前を入力">
+        <button onclick="addName()">名前を追加</button>
+        <input type="text" id="newEvent" placeholder="イベントを入力">
+        <button onclick="addEvent()">イベントを追加</button>
+    </div>
+
+    <button onclick="downloadExcel()">Excelダウンロード</button>
+
+    <script>
         renderTable();
     </script>
 </body>
