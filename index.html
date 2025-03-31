@@ -74,9 +74,18 @@
       "2/15 春季研修", "送る会"
     ];
 
-    let attendanceData = {};
+    function saveToFirebase(name, event, value) {
+      db.ref(`attendance/${name}/${event}`).set(value);
+    }
 
-    function renderTable() {
+    function loadFromFirebase() {
+      db.ref("attendance").once("value").then(snapshot => {
+        const data = snapshot.val();
+        renderTable(data || {});
+      });
+    }
+
+    function renderTable(data) {
       const theadRow = document.getElementById("headerRow");
       theadRow.innerHTML = '<th>名前</th>';
       events.forEach((event, i) => {
@@ -91,7 +100,7 @@
         for (let i = 0; i < events.length; i++) {
           const event = events[i];
           const cellId = `${name}_${event}`;
-          const value = attendanceData[name] && attendanceData[name][event] ? attendanceData[name][event] : "";
+          const value = data[name] && data[name][event] ? data[name][event] : "";
           row += `<td><select id="${cellId}" onchange="saveToFirebase('${name}', '${event}', this.value); updateCounts();">
             <option value="" ${value === "" ? "selected" : ""}></option>
             <option value="〇" ${value === "〇" ? "selected" : ""}>〇</option>
@@ -104,17 +113,6 @@
 
       updateCounts();
       updateFilterOptions();
-    }
-
-    function saveToFirebase(name, event, value) {
-      db.ref(`attendance/${name}/${event}`).set(value);
-    }
-
-    function loadFromFirebase() {
-      db.ref("attendance").once("value").then(snapshot => {
-        attendanceData = snapshot.val() || {};
-        renderTable();
-      });
     }
 
     function updateCounts() {
@@ -154,7 +152,7 @@
       const nameInput = document.getElementById("newName").value.trim();
       if (nameInput && !names.includes(nameInput)) {
         names.push(nameInput);
-        renderTable();
+        loadFromFirebase();
         document.getElementById("newName").value = "";
       }
     }
@@ -163,7 +161,7 @@
       const eventInput = document.getElementById("newEvent").value.trim();
       if (eventInput && !events.includes(eventInput)) {
         events.push(eventInput);
-        renderTable();
+        loadFromFirebase();
         document.getElementById("newEvent").value = "";
       }
     }
