@@ -3,103 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>教員出欠WEB</title>
+  <title>出欠表</title>
   <style>
     body {
       margin: 0;
       padding: 10px;
       font-family: sans-serif;
     }
-
     table {
       border-collapse: collapse;
+      width: 100%;
       min-width: 800px;
     }
-
-    th, td {
+    th,
+    td {
       border: 1px solid #000;
-      padding: 6px;
+      padding: 8px;
       text-align: center;
       white-space: nowrap;
     }
-
-    select {
-      font-size: 16px;
-      color: black;
+    .controls {
+      margin: 20px 0;
     }
-
-    .fixed-name {
-      position: sticky;
-      left: 0;
-      background: #fff;
-      z-index: 1;
-    }
-
     .table-container {
       overflow-x: auto;
       width: 100%;
     }
-
-    .controls {
-      margin: 10px 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
     #noticeArea {
       margin: 20px 0;
       padding: 10px;
       border: 1px solid #ccc;
       background: #f9f9f9;
     }
-
     #noticeText {
       width: 100%;
       height: 100px;
       font-size: 18px;
     }
-
-    @media (max-width: 768px) {
-      th, td, select {
-        font-size: 14px;
-        padding: 4px;
-      }
-
-      #noticeText {
-        font-size: 16px;
-        height: 80px;
-      }
-    }
-
-    @media print {
-      button, input, textarea, select {
-        display: none;
-      }
-    }
   </style>
-
-  <!-- Firebase & xlsx -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database-compat.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/11.5.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.5.0/firebase-database-compat.js"></script>
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyD9OakYyH-ONyGRvkPbVzxODrg4lyWcKq4",
-      authDomain: "teacherlist-dfac5.firebaseapp.com",
-      databaseURL: "https://teacherlist-dfac5-default-rtdb.firebaseio.com",
-      projectId: "teacherlist-dfac5",
-      storageBucket: "teacherlist-dfac5.appspot.com",
-      messagingSenderId: "504608468919",
-      appId: "1:504608468919:web:a9499106714e9f23c2c232"
+      apiKey: "AIzaSyDNazC7mdPwtTFzWLrXldVr0FldCsx44Ow",
+      authDomain: "attendance-62d3c.firebaseapp.com",
+      databaseURL: "https://attendance-62d3c-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "attendance-62d3c",
+      storageBucket: "attendance-62d3c.firebasestorage.app",
+      messagingSenderId: "172372413053",
+      appId: "1:172372413053:web:81cb299d9d1659d474bf14",
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let names = Array(20).fill("").map((_, i) => `教員${i + 1}`);
-    let events = Array(5).fill("").map((_, i) => `イベント${i + 1}`);
+    let names = [
+      "小島美紀(Ｓ３)", "笹山久美子(Ｓ３)", "栗山亞矢子(Ｓ３)", "鷲見亜希子(Ｓ３)", "中村紋子(Ｓ３)",
+      "西川美佳(Ｓ３)", "眞浦知恵子(Ｓ３)", "稲葉弘子(Ｓ３)", "伊藤恵美(Ｓ３)", "佐藤晃子(Ｓ３)",
+      "高橋保子(Ｓ２)", "本間敏代(Ｓ２)", "新信万里子(Ｓ２)", "竹村瑞恵(Ｓ２)", "垣見京子(Ｓ２)",
+      "永裕香子(Ｓ２)", "長坂紀代(Ｓ２)", "小見山さおり(Ｓ２)", "塚原花子(Ｓ２)", "松本倫子(Ｓ２)",
+      "高橋真紀(Ｓ２)", "加藤明美(Ｓ２)", "加藤有紀(Ｓ１)", "香川敦子(Ｓ１)", "大鹿居依(Ｓ１)",
+      "櫻井杏子(Ｓ１)", "井戸真弓(Ｓ１)", "岩瀬初美(Ｓ１)", "田中律子(Ｓ１)", "竹腰篤(Ｓ１)",
+      "小河友里菜(Ｊ３)", "砥川加容子(Ｊ３)", "尾関奏子(Ｊ３)"
+    ];
+
+    let events = [
+      "3-29 事務局", "4-26 歓迎会", "5-25 午前総会", "5-25 午後総会", "6-8 初夏つどい",
+      "7-5 午前集い", "7-5 午後ファンミ", "7-20 サマセミ", "8-2 日帰研修", "8-2 宿泊研修",
+      "10-18 午前集い", "10-18 午後ファンミ", "11-16 オータム", "12-6 Xmas会", "1-17 講座",
+      "2-15 春季研修", "送る会"
+    ];
+
     const attendanceData = {};
 
     function saveToFirebase(name, event, value) {
@@ -107,37 +81,37 @@
     }
 
     function loadFromFirebase() {
-      db.ref("attendance").on("value", snapshot => {
+      db.ref("attendance").once("value").then(snapshot => {
         const data = snapshot.val() || {};
-        names.forEach(name => {
+        for (const name of names) {
           attendanceData[name] = data[name] || {};
-        });
+        }
         renderTable();
       });
     }
 
     function renderTable() {
       const theadRow = document.getElementById("headerRow");
-      theadRow.innerHTML = '<th class="fixed-name">名前</th>';
+      theadRow.innerHTML = '<th>名前</th>';
       events.forEach((event, i) => {
-        theadRow.innerHTML += `<th>${event}<br>○:<span id="countYes${i}">0</span> ✖:<span id="countNo${i}">0</span></th>`;
+        theadRow.innerHTML += `<th>${event}<br>〇: <span id="countYes${i}">0</span> ✖: <span id="countNo${i}">0</span></th>`;
       });
 
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
 
       names.forEach(name => {
-        let row = `<tr><td class="fixed-name">${name}</td>`;
-        events.forEach((event, j) => {
+        let row = `<tr><td>${name}</td>`;
+        for (let i = 0; i < events.length; i++) {
+          const event = events[i];
           const cellId = `${name}_${event}`;
-          const value = attendanceData[name]?.[event] || "";
+          const value = attendanceData[name][event] || "";
           row += `<td><select id="${cellId}" onchange="saveToFirebase('${name}', '${event}', this.value); updateCounts();">
             <option value="" ${value === "" ? "selected" : ""}></option>
-            <option value="○" ${value === "○" ? "selected" : ""}>○</option>
-            <option value="△" ${value === "△" ? "selected" : ""}>△</option>
-            <option value="✕" ${value === "✕" ? "selected" : ""}>✕</option>
+            <option value="〇" ${value === "〇" ? "selected" : ""}>〇</option>
+            <option value="✖" ${value === "✖" ? "selected" : ""}>✖</option>
           </select></td>`;
-        });
+        }
         row += '</tr>';
         tbody.innerHTML += row;
       });
@@ -147,16 +121,16 @@
     }
 
     function updateCounts() {
-      events.forEach((_, i) => {
+      for (let i = 0; i < events.length; i++) {
         const selects = document.querySelectorAll(`tbody td:nth-child(${i + 2}) select`);
         let yes = 0, no = 0;
         selects.forEach(select => {
-          if (select.value === "○") yes++;
-          if (select.value === "✕") no++;
+          if (select.value === "〇") yes++;
+          if (select.value === "✖") no++;
         });
         document.getElementById(`countYes${i}`).textContent = yes;
         document.getElementById(`countNo${i}`).textContent = no;
-      });
+      }
     }
 
     function updateFilterOptions() {
@@ -172,36 +146,43 @@
 
     function filterNames() {
       const selected = document.getElementById("filterName").value;
-      document.querySelectorAll("tbody tr").forEach(row => {
+      const rows = document.querySelectorAll("tbody tr");
+      rows.forEach(row => {
         const name = row.cells[0].textContent;
         row.style.display = (!selected || name === selected) ? "" : "none";
       });
     }
 
     function addName() {
-      const newName = prompt("追加する教員名を入力してください");
-      if (newName && !names.includes(newName)) {
-        names.push(newName);
-        attendanceData[newName] = {};
+      const nameInput = document.getElementById("newName").value.trim();
+      if (nameInput && !names.includes(nameInput)) {
+        names.push(nameInput);
+        attendanceData[nameInput] = {};
         renderTable();
+        document.getElementById("newName").value = "";
       }
     }
 
     function addEvent() {
-      const newEvent = prompt("追加するイベント名を入力してください");
-      if (newEvent && !events.includes(newEvent)) {
-        events.push(newEvent);
+      const eventInput = document.getElementById("newEvent").value.trim();
+      if (eventInput && !events.includes(eventInput)) {
+        events.push(eventInput);
         renderTable();
+        document.getElementById("newEvent").value = "";
       }
     }
 
     function downloadExcel() {
-      const wsData = [["名前", ...events]];
-      document.querySelectorAll("tbody tr").forEach(row => {
+      const wsData = [];
+      const header = ["名前", ...events];
+      wsData.push(header);
+
+      const rows = document.querySelectorAll("tbody tr");
+      rows.forEach(row => {
         const rowData = [row.cells[0].textContent];
         for (let i = 1; i < row.cells.length; i++) {
-          const val = row.cells[i].querySelector("select")?.value || "";
-          rowData.push(val);
+          const select = row.cells[i].querySelector("select");
+          rowData.push(select ? select.value : "");
         }
         wsData.push(rowData);
       });
@@ -214,43 +195,46 @@
 
     function loadNotice() {
       db.ref("notice").on("value", snapshot => {
-        document.getElementById("noticeText").value = snapshot.val() || "";
+        const data = snapshot.val();
+        document.getElementById("noticeText").value = data || "";
       });
     }
 
     function saveNotice() {
-      db.ref("notice").set(document.getElementById("noticeText").value);
+      const text = document.getElementById("noticeText").value;
+      db.ref("notice").set(text);
     }
-
-    window.addEventListener("DOMContentLoaded", () => {
-      loadFromFirebase();
-      loadNotice();
-    });
   </script>
 </head>
 <body>
-  <h2>教員出欠WEB</h2>
-
+  <h2>出欠表</h2>
   <div id="noticeArea">
     <h3>お知らせ欄</h3>
     <textarea id="noticeText" placeholder="ここにお知らせを入力"></textarea><br />
     <button onclick="saveNotice()">保存</button>
   </div>
-
   <label for="filterName">名前でフィルター：</label>
-  <select id="filterName" onchange="filterNames()"></select>
-
+  <select id="filterName" onchange="filterNames()">
+    <option value="">全員表示</option>
+  </select>
   <div class="table-container">
-    <table>
-      <thead><tr id="headerRow"></tr></thead>
+    <table id="attendanceTable">
+      <thead>
+        <tr id="headerRow"></tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
-
   <div class="controls">
-    <button onclick="addName()">＋ 教員を追加</button>
-    <button onclick="addEvent()">＋ イベントを追加</button>
-    <button onclick="downloadExcel()">⬇ Excelダウンロード</button>
+    <input type="text" id="newName" placeholder="名前を入力" />
+    <button onclick="addName()">名前を追加</button>
+    <input type="text" id="newEvent" placeholder="イベントを入力" />
+    <button onclick="addEvent()">イベントを追加</button>
   </div>
+  <button onclick="downloadExcel()">Excelダウンロード</button>
+  <script>
+    loadFromFirebase();
+    loadNotice();
+  </script>
 </body>
 </html>
